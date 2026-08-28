@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+*.cz
+*.npz
+*.npy
+.pytest_cache/
+.ruff_cache/
+
+# ...except the frozen test fixtures, which are tracked on purpose.
+!tests/data/*.cz
+!tests/data/*.npz
+!tests/data/*.npy

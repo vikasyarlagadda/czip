@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: python -m pip install --upgrade pip ruff
+      - name: Lint
+        run: ruff check .
+
+  test-pip:
+    # The whole decode path, installed from PyPI dependencies alone. No
+    # graph-tool here on purpose: this job is the proof that decoding a
+    # container needs nothing but numpy, scipy and constriction. The parity
+    # suites and the fitting tests skip themselves.
+    name: test (pip, no graph-tool)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Test
+        run: pytest -q -rs
+
+      - name: Round-trip a synthetic graph
+        run: |
+          python examples/make_example.py --out-dir smoke
+          czip encode smoke/example_graph.npz \
+            --partition smoke/example_partition.npy \
+            --wmin 1 -o smoke/example.cz
+          czip decode smoke/example.cz -o smoke/example_decoded.npz
+          python - <<'PY'
+          import numpy as np
+          import scipy.sparse as sp
+
+          a = sp.load_npz("smoke/example_graph.npz").tocsr()
+          b = sp.load_npz("smoke/example_decoded.npz").tocsr()
+          a.sort_indices()
+          b.sort_indices()
+          assert a.shape == b.shape, (a.shape, b.shape)
+          assert np.array_equal(a.indices, b.indices), "indices differ"
+          assert np.array_equal(a.indptr, b.indptr), "indptr differ"
+          assert np.array_equal(a.data, b.data), "weights differ"
+          print(f"round-trip exact: {a.shape[0]} nodes, {a.nnz} edges")
+          PY
+          czip info smoke/example.cz
+
+  test-conda:
+    # The encode side. graph-tool comes from conda-forge, so this job also
+    # runs the parity suites that the pip job skips, plus `--model auto`.
+    name: test (conda, with graph-tool)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: .github/ci-env.yml
+          cache-environment: true
+          cache-downloads: true
+
+      - name: Install
+        run: pip install -e ".[test]"
+
+      - name: Test
+        run: pytest -q -rs
+
+      - name: Fit and round-trip a synthetic graph
+        run: |
+          python examples/make_example.py --out-dir smoke
+          czip encode smoke/example_graph.npz --model auto \
+            --wmin 1 -o smoke/auto.cz
+          czip decode smoke/auto.cz -o smoke/auto_decoded.npz
+          python - <<'PY'
+          import numpy as np
+          import scipy.sparse as sp
+
+          a = sp.load_npz("smoke/example_graph.npz").tocsr()
+          b = sp.load_npz("smoke/auto_decoded.npz").tocsr()
+          a.sort_indices()
+          b.sort_indices()
+          assert a.shape == b.shape, (a.shape, b.shape)
+          assert np.array_equal(a.indices, b.indices), "indices differ"
+          assert np.array_equal(a.indptr, b.indptr), "indptr differ"
+          assert np.array_equal(a.data, b.data), "weights differ"
+          print(f"round-trip exact: {a.shape[0]} nodes, {a.nnz} edges")
+          PY
+          czip info smoke/auto.cz

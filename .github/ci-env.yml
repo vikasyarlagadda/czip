@@ -1,0 +1,19 @@
+# Conda environment for the job that exercises the encode side.
+#
+# graph-tool is not installable from PyPI — it is a conda-forge package with
+# compiled Boost/CGAL dependencies. It is needed only for `--model auto` and
+# for the parity tests that pin the coders against graph-tool's own
+# description-length terms; decoding never touches it.
+name: czip-ci
+channels:
+  - conda-forge
+#
+# polars is not a dependency of the package either. `sbm.partition_from_types`
+# builds a partition straight from an annotation table's cell-type column, and
+# its two tests skip where polars is absent; installing it here keeps them
+# running instead of quietly disappearing.
+dependencies:
+  - python=3.12
+  - graph-tool
+  - polars
+  - pip

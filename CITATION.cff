@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: czip
+abstract: >-
+  A lossless compressor for directed, weighted graphs stored as sparse
+  matrices or edge lists. czip entropy-codes a graph under a
+  degree-corrected stochastic block model (flat or nested) and writes a
+  versioned .cz container that is verified by decoding it.
+type: software
+version: 0.1.0
+date-released: "2026-08-28"
+license: MIT
+authors:
+  - family-names: Yarlagadda
+    given-names: Vikas
+repository-code: "https://github.com/vikasyarlagadda/czip"
+keywords:
+  - compression
+  - connectomics
+  - stochastic block model
+  - minimum description length
+  - entropy coding
