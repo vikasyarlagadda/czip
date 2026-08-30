@@ -106,7 +106,7 @@ citations: [docs/RESULTS.md](docs/RESULTS.md). Each of those containers costs
 the same 50.03 MB decoder term on top.
 
 **No connectome data ships with this repository.** What ships for the example
-is the generator script, not its output so the only graph-data files in the
+is the generator script, not its output — so the only graph-data files in the
 repository are about 8 KB of synthetic format-compatibility test fixtures,
 built from a seeded random graph.
 
@@ -123,8 +123,8 @@ file.
 The nested model does the same thing to the partition. It codes a hierarchy of
 partitions (blocks of blocks of blocks) bottom-up, and then the expansions
 top-down. On every connectome tested, the nested container is smaller than
-the flat one. Fitting either model is graph-tool's job and coding it and proving
-the round-trip, is `czip`'s.
+the flat one. Fitting either model is graph-tool's job; coding it and proving
+the round-trip is `czip`'s.
 
 The `.cz` container is a dispatcher, not a coder. It holds a canonical JSON
 header (model id, digests, a stream table whose geometry is validated on read
